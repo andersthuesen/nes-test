@@ -11,39 +11,41 @@
 	stx $2001  ; disable rendering
 	stx $4010  ; disable DMC IRQs
 
-@wait:
+wait:
   bit $2002	 ; Wait for V-Blank
-	bpl @wait
+	bpl wait
 
-@clear:
-  lda #$00 	; Clear RAM
-	sta $0000, x
-	sta $0100, x
-	sta $0200, x
-	sta $0300, x
-	sta $0400, x
-	sta $0500, x
-	sta $0600, x
-	sta $0700, x
+clear_memory:
+	lda	#$00
+	sta	$0000, x
+	sta	$0100, x
+	sta	$0300, x
+	sta	$0400, x
+	sta	$0500, x
+	sta	$0600, x
+	sta	$0700, x
+	lda	#$fe
+	sta	$0200, x	; move all sprites off screen
 	inx
-	bne @clear
+	bne	clear_memory
 
-@wait2:
+wait2:
   bit $2002  ; Wait for V-Blank
-	bpl @wait2
+	bpl wait2
 
-;@clear_palette:
-	;; Need clear both palettes to $00. Needed for Nestopia. Not
-	;; needed for FCEU* as they're already $00 on powerup.
-;	lda	$2002		; Read PPU status to reset PPU address
-;	lda	#$3f		; Set PPU address to BG palette RAM ($3F00)
-;	sta	$2006
-;	lda	#$00
-;	sta $2006
-;	ldx	#$20		; Loop $20 times (up to $3F20)
-;	lda	#$00		; Set each entry to $00
+clear_nametables:
+	lda	$2002		; read PPU status to reset the high/low latch
+	lda	#$20		; write the high byte of $2000
+	sta	$2006		;  .
+	lda	#$00		; write the low byte of $2000
+	sta	$2006		;  .
+	ldx	#$08		; prepare to fill 8 pages ($800 bytes)
+	ldy	#$00		;  x/y is 16-bit counter, high byte in x
+	lda	#$27		; fill with tile $27 (a solid box)
 
-;@loop:
-;	sta	$2007
-;	dex
-;	bne	@loop
+  @loop:
+  	sta	$2007
+  	dey
+  	bne	@loop
+  	dex
+  	bne	@loop
